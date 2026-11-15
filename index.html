@@ -45,7 +45,7 @@ ul{margin:6px 0;padding-left:18px}
 .fm label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
 .fm input,.fm select{font:inherit;font-size:16px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <h1>👨‍👩‍👧‍👦 習い事スケジュール検討（2026.12）<span id="sync" class="mut" style="font-weight:400;margin-left:6px"></span></h1>
@@ -68,7 +68,7 @@ ul{margin:6px 0;padding-left:18px}
 <details class="card" id="set"><summary>☁ 夫婦で共有する設定（Supabase）</summary>
 <div class="fm"><label>Project URL<input id="su" placeholder="https://xxxx.supabase.co"></label><label>anon key<input id="sk"></label><label>家族コード<input id="sr" placeholder="main"></label></div>
 <button id="sc">保存して接続</button>
-<p class="mut">夫婦で同じ3つを入力します。クラウドにデータがあれば、接続した端末はそのデータに置き換わります。変更は自動で保存・同期されます。</p></details>
+<p class="mut">夫婦で同じ3つを入力します。クラウドにデータがあれば、接続した端末はそのデータに置き換わります。変更は自動で保存・同期されます。</p><p id="sync-detail" class="mut" role="status">接続診断：未確認</p></details>
 <script>
 const D=['月','火','水','木','金','土','日'],R=26,H=26,LS='kids-plan-v1';
 const E=(n,c,d,h,m,l)=>({n,c,d,s:(h-7)*2+(m?1:0),l});
@@ -156,13 +156,14 @@ render();
 const CID=Math.random().toString(36).slice(2);
 let sb=null,chn=null,pt=null;
 const cfg=()=>{try{return JSON.parse(localStorage.getItem('kids-sb-cfg')||'{}')}catch(e){return{}}};
-const status=t=>{$('sync').textContent=t};
+const status=(t,detail='')=>{$('sync').textContent=t;if($('sync-detail'))$('sync-detail').textContent=detail?'接続診断：'+detail:'接続診断：'+t};
+const errText=e=>{if(!e)return '詳細情報なし';return [e.message,e.details,e.hint,e.code].filter(Boolean).join(' / ')||String(e)};
 const c0=cfg();$('su').value=c0.url||'';$('sk').value=c0.key||'';$('sr').value=c0.room||'main';
 $('sc').onclick=()=>{try{localStorage.setItem('kids-sb-cfg',JSON.stringify({url:$('su').value.trim(),key:$('sk').value.trim(),room:$('sr').value.trim()||'main'}))}catch(e){}connect()};
 function sched(){if(!sb)return;clearTimeout(pt);pt=setTimeout(push,400)}
 async function push(){
  try{const{error}=await sb.from('schedule').upsert({id:cfg().room||'main',data:{base,plan,cid:CID},updated_at:new Date().toISOString()});
-  if(error)throw error;status('☁ 同期済み')}catch(e){status('☁ 送信エラー');console.error(e)}
+  if(error)throw error;status('☁ 同期済み','scheduleへの保存に成功しました')}catch(e){status('☁ 送信エラー',errText(e));console.error('Supabase upsert error:',e)}
 }
 function applyRemote(d){
  if(dr){setTimeout(()=>applyRemote(d),500);return}
@@ -172,15 +173,23 @@ function applyRemote(d){
 }
 async function connect(){
  const c=cfg();
- if(!c.url||!c.key){status('☁ 未設定（この端末のみ保存）');return}
+ if(!c.url||!c.key){status('☁ 未設定（この端末のみ保存）','Project URLとPublishable keyを入力してください');return}
  try{
-  if(chn&&sb)sb.removeChannel(chn);
-  sb=supabase.createClient(c.url,c.key);const room=c.room||'main';
+  if(!window.supabase||!window.supabase.createClient)throw new Error('Supabaseライブラリを読み込めません。通信環境またはCDNへのアクセスを確認してください');
+  if(chn&&sb)await sb.removeChannel(chn);
+  sb=window.supabase.createClient(c.url,c.key);const room=c.room||'main';
+  status('☁ 接続確認中','Supabaseに問い合わせています');
   const{data,error}=await sb.from('schedule').select('data').eq('id',room).maybeSingle();
-  if(error)throw error;
-  if(data&&data.data)applyRemote(data.data);else await push();
-  chn=sb.channel('sched-'+room).on('postgres_changes',{event:'*',schema:'public',table:'schedule',filter:'id=eq.'+room},p=>{const d=p.new&&p.new.data;if(d&&d.cid!==CID)applyRemote(d)}).subscribe(st=>{if(st==='SUBSCRIBED')status('☁ 同期中');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')status('☁ 再接続待ち')});
- }catch(e){status('☁ 接続エラー');console.error(e)}
+  if(error)throw new Error('schedule読み込み失敗：'+errText(error));
+  if(data&&data.data){applyRemote(data.data);status('☁ データ読込成功','scheduleの既存データを読み込みました')}
+  else {status('☁ 初回保存中','mainのデータがないため、この端末の予定を初回保存します');await push()}
+  chn=sb.channel('sched-'+room).on('postgres_changes',{event:'*',schema:'public',table:'schedule',filter:'id=eq.'+room},p=>{const d=p.new&&p.new.data;if(d&&d.cid!==CID)applyRemote(d)}).subscribe((st,err)=>{
+   if(st==='SUBSCRIBED')status('☁ 同期中','データベース接続とRealtime購読に成功しました');
+   else if(st==='CHANNEL_ERROR')status('☁ Realtimeエラー','データベースの読み書きとは別に、変更通知の購読に失敗しています。SupabaseのDatabase > Publicationsでsupabase_realtimeにscheduleが含まれるか確認してください'+(err?' / '+errText(err):''));
+   else if(st==='TIMED_OUT')status('☁ 接続タイムアウト','Realtimeへの接続が時間内に完了しませんでした');
+   else if(st==='CLOSED')status('☁ 接続終了','Realtime接続が閉じられました');
+  });
+ }catch(e){status('☁ 接続エラー',errText(e));console.error('Supabase connection error:',e)}
 }
 connect();
 </script>
