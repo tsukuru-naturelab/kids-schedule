@@ -178,7 +178,7 @@ async function connect(){
   if(error)throw error;
   if(data&&data.data)applyRemote(data.data);else await push();
   chn=sb.channel('sched-'+room).on('postgres_changes',{event:'*',schema:'public',table:'schedule',filter:'id=eq.'+room},p=>{const d=p.new&&p.new.data;if(d&&d.cid!==CID)applyRemote(d)}).subscribe(st=>{if(st==='SUBSCRIBED')status('☁ 同期中');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')status('☁ 再接続待ち')});
- }catch(e){status('☁ 接続エラー');console.error(e)}
+ }catch(e){status('☁ 接続エラー: '+(e.message||e));console.error(e)}
 }
 connect();
 </script>
