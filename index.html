@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>習い事スケジュール検討</title>
+<style>
+:root{--bg:#fafaf7;--fg:#222;--mut:#777;--line:#e2e2dc;--card:#fff;--a:#2f7ed8;--b:#e0568a;--k:#2e9d6b;--chg:#f08c00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171a;--fg:#eee;--mut:#9a9a9a;--line:#33353a;--card:#202226;--a:#5ba3f5;--b:#f27fab;--k:#4fc58f;--chg:#ffa733;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#16171a;--fg:#eee;--mut:#9a9a9a;--line:#33353a;--card:#202226;--a:#5ba3f5;--b:#f27fab;--k:#4fc58f;--chg:#ffa733;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;max-width:960px;margin:0 auto;padding:10px}
+h1{font-size:17px;margin:4px 0 8px}
+.tabs,.fl{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tabs button{flex:1;font-weight:600;padding:9px}
+.badge{background:var(--chg);color:#000;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+.leg{font-size:12px;color:var(--mut);margin-bottom:6px}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 3px 0 8px;vertical-align:-1px}
+.sc{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);max-height:70vh;overflow-y:auto}
+.gw{min-width:580px}
+.hd{display:flex;position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.hd div{flex:1;text-align:center;font-weight:600;padding:4px 0}.hd .sp{flex:none;width:36px}
+.bd{position:relative}
+.row{height:26px;border-top:1px solid var(--line);font-size:10px;color:var(--mut);padding-left:3px}
+.row.h{border-top-color:var(--mut)}.row.hf{border-top-style:dotted}
+.cols{position:absolute;left:36px;right:0;top:0;bottom:0}
+.col{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
+.b{position:absolute;border-radius:5px;font-size:10px;line-height:1.2;padding:2px 3px;overflow:hidden;cursor:grab;touch-action:none;user-select:none;border:1px solid;z-index:2;word-break:break-all}
+.b.a{background:color-mix(in srgb,var(--a) 24%,var(--card));border-color:var(--a)}
+.b.p{background:color-mix(in srgb,var(--b) 24%,var(--card));border-color:var(--b)}
+.b.k{background:color-mix(in srgb,var(--k) 24%,var(--card));border-color:var(--k)}
+.b.chg{box-shadow:0 0 0 2px var(--chg)}.b.sel{outline:2px solid var(--fg);z-index:4}
+.b.ro{cursor:default}.b.drag{z-index:9;opacity:.85}
+.b.ghost{background:none;border-style:dashed;opacity:.55;z-index:1;pointer-events:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}
+.pad{display:grid;grid-template-columns:repeat(3,44px);gap:4px;justify-content:center;margin:6px 0}
+.pad button{padding:8px 0}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:13px}
+.ch:first-of-type{border-top:0}.mut{color:var(--mut);font-size:12px}
+.arrow{color:var(--chg);font-weight:700}
+details{margin-top:10px}summary{cursor:pointer;font-weight:600}
+ul{margin:6px 0;padding-left:18px}
+.fm{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:8px 0}
+.fm label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.fm input,.fm select{font:inherit;font-size:16px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<h1>👨‍👩‍👧‍👦 習い事スケジュール検討（2026.12）<span id="sync" class="mut" style="font-weight:400;margin-left:6px"></span></h1>
+<div class="tabs"><button id="t0">現状</button><button id="t1">改善案<span class="badge" id="bd">0</span></button></div>
+<div class="fl" id="fl"></div>
+<div class="leg"><i style="background:var(--a)"></i>正義<i style="background:var(--b)"></i>珠里<i style="background:var(--k)"></i>ふたり<i style="border:2px solid var(--chg)"></i>変更あり<i style="border:1px dashed var(--mut)"></i>元の位置</div>
+<div class="sc"><div class="gw"><div class="hd" id="hd"></div><div class="bd" id="g"></div></div></div>
+<div id="panel"></div>
+<div id="chg"></div>
+<details class="card"><summary>終了予定・メモ</summary>
+<ul>
+<li>正義 プール：学校でクロールまで合格すれば終了</li>
+<li>正義 日本舞踊：受験の作法・環境への免疫づくりが目的。今年度で終了</li>
+<li>珠里 日本舞踊：目的達成のため小学校前まで継続、そのとき再検討</li>
+<li>体操の時間変更：正義と珠里を並べる</li>
+</ul>
+<button id="gym">体操を並べる（珠里を正義の時間へ）</button>
+<p class="mut">※ 元の表で読み取りにくかった箇所は推測で配置しています。時間の長さは目安です。</p>
+</details>
+<details class="card" id="set"><summary>☁ 夫婦で共有する設定（Supabase）</summary>
+<div class="fm"><label>Project URL<input id="su" placeholder="https://xxxx.supabase.co"></label><label>anon key<input id="sk"></label><label>家族コード<input id="sr" placeholder="main"></label></div>
+<button id="sc">保存して接続</button>
+<p class="mut">夫婦で同じ3つを入力します。クラウドにデータがあれば、接続した端末はそのデータに置き換わります。変更は自動で保存・同期されます。</p></details>
+<script>
+const D=['月','火','水','木','金','土','日'],R=26,H=26,LS='kids-plan-v1';
+const E=(n,c,d,h,m,l)=>({n,c,d,s:(h-7)*2+(m?1:0),l});
+const base=[
+E('体操','正',0,15,30,2),E('絵日記宿題','正',0,16,30,1),E('ドリブル','正',0,18,30,2),
+E('kidsup','珠',1,13,30,1),E('ピアノ','珠',1,14,0,2),E('武藤さん','珠',1,15,0,2),E('エベレスト','正',1,16,0,2),E('絵日記宿題','正',1,19,0,1),E('七田式プリ','正',1,19,30,1),
+E('(そろばん)','珠',2,15,30,1),E('ヴァイオリン','珠',2,16,0,2),E('ピアノ','正',2,16,30,2),E('絵日記宿題','正',2,19,0,1),E('七田式プリ','正',2,19,30,1),
+E('？？？','正',3,13,30,1),E('体操','珠',3,14,30,2),E('七田式','珠',3,16,30,1),E('絵日記宿題','正',3,19,0,1),E('七田式プリ','正',3,19,30,1),
+E('kidsup','珠',4,13,30,1),E('サッカー','正',4,15,30,2),E('絵日記宿題','正',4,19,0,1),E('七田式プリ','正',4,19,30,1),
+E('スピーキング','正',5,8,0,2),E('そろばん','正',5,10,0,2),E('七田式プリ','正',5,11,30,1),E('七田式','珠',5,11,30,1),E('クリエイト','共',5,13,30,2),
+E('プール','共',6,8,30,2),E('アート','正',6,10,0,2),E('日本舞踊','珠',6,11,30,2),E('日本舞踊','正',6,14,0,2)
+].map((x,i)=>(x.id=i,x));
+try{const b=JSON.parse(localStorage.getItem(LS+'b')||'null');if(b&&b.length==base.length)b.forEach((v,i)=>Object.assign(base[i],v))}catch(e){}
+let plan=base.map(x=>({...x})),tab=0,who='all',sel=null;
+try{const s=JSON.parse(localStorage.getItem(LS)||'null');if(s&&s.length==base.length)plan=s}catch(e){}
+const saveLocal=()=>{try{localStorage.setItem(LS,JSON.stringify(plan));localStorage.setItem(LS+'b',JSON.stringify(base))}catch(e){}};
+const save=()=>{saveLocal();sched()};
+const cur=()=>tab?plan:base;
+function upd(id,p){const b=base[id],o=plan[id],x=tab?o:b,same=o.d==b.d&&o.s==b.s&&o.l==b.l;
+ Object.assign(x,p);x.l=Math.max(1,Math.min(x.l,R));x.s=Math.max(0,Math.min(x.s,R-x.l));x.d=Math.max(0,Math.min(6,x.d));
+ const y=tab?b:o;if(p.n!=null)y.n=x.n;if(p.c!=null)y.c=x.c;
+ if(!tab&&same){o.d=b.d;o.s=b.s;o.l=b.l}
+ save();render()}
+const fm=s=>(7+(s>>1))+':'+(s%2?'30':'00');
+const pos=x=>D[x.d]+' '+fm(x.s)+'–'+fm(x.s+x.l);
+const diff=()=>plan.filter((x,i)=>x.d!=base[i].d||x.s!=base[i].s||x.l!=base[i].l);
+const $=id=>document.getElementById(id);
+const cls=c=>c=='正'?'a':c=='珠'?'p':'k';
+const nm=x=>({正:'正義',珠:'珠里',共:'ふたり'}[x.c])+' '+x.n;
+function lane(x){if(who!='all'||x.c=='共')return[0,100];return x.c=='正'?[0,50]:[50,50]}
+function blk(x,o){const[l,w]=lane(x);return `<div class="b ${cls(x.c)} ${o.join(' ')}" data-id="${x.id}" style="top:${x.s*H}px;height:${x.l*H-2}px;left:${l}%;width:${w}%">${x.n}</div>`}
+function render(){
+ $('t0').className=tab==0?'on':'';$('t1').className=tab==1?'on':'';
+ $('bd').textContent=diff().length;$('bd').style.display=diff().length?'':'none';
+ $('fl').innerHTML=[['all','両方'],['正','正義'],['珠','珠里']].map(([k,v])=>`<button class="${who==k?'on':''}" data-w="${k}">${v}</button>`).join('');
+ $('hd').innerHTML='<div class="sp"></div>'+D.map(d=>`<div>${d}</div>`).join('');
+ let h='';for(let i=0;i<R;i++)h+=`<div class="row ${i%2?'hf':'h'}">${i%2?'':fm(i)}</div>`;
+ h+='<div class="cols">';
+ const list=(tab?plan:base).filter(x=>who=='all'||x.c==who||x.c=='共');
+ for(let d=0;d<7;d++){
+  h+=`<div class="col" style="left:${d*100/7}%;width:${100/7}%">`;
+  list.filter(x=>x.d==d).forEach(x=>{const ch=tab&&(x.d!=base[x.id].d||x.s!=base[x.id].s||x.l!=base[x.id].l);h+=blk(x,['',ch?'chg':'',sel==x.id?'sel':''])});
+  if(tab)list.forEach(x=>{const o=base[x.id];if(o.d==d&&(x.d!=o.d||x.s!=o.s||x.l!=o.l))h+=blk(o,['ghost'])});
+  h+='</div>';
+ }
+ $('g').innerHTML=h+'</div>';
+ const x=sel!=null?cur()[sel]:null;
+ $('panel').innerHTML=`<div class="card">${x?`<b>${nm(x)}</b>（${pos(x)}）${form(x)}<div class="pad"><span></span><button data-m="0,-1">▲</button><span></span><button data-m="-1,0">◀</button>${tab?'<button data-m="0,0" title="元に戻す">↩</button>':'<span></span>'}<button data-m="1,0">▶</button><span></span><button data-m="0,1">▼</button><span></span></div><div class="mut">▲▼は30分単位。ブロックはドラッグでも動かせます。</div>`:'<span class="mut">ブロックをタップで選択 → ボタンで移動。PCやスマホではドラッグでも移動できます。選ぶと曜日・時間を入力できます。</span>'}</div>`;
+ const df=diff();
+ $('chg').innerHTML=tab?`<div class="card"><b>変更点（${df.length}件）</b>${df.length?df.map(x=>`<div class="ch"><span>${nm(x)}<br><span class="mut">${pos(base[x.id])} <span class="arrow">→</span> ${pos(x)}</span></span><button data-r="${x.id}">戻す</button></div>`).join('')+'<div style="margin-top:8px"><button data-r="all">すべて元に戻す</button></div>':'<div class="mut">まだ変更はありません。</div>'}</div>`:`<div class="card mut">現状のスケジュールです。「改善案」タブで動かしてみましょう。</div>`;
+}
+const mv=(x,dd,ds)=>upd(x.id,{d:x.d+dd,s:x.s+ds});
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button');if(!t)return;
+ if(t.id=='t0'){tab=0;render()}else if(t.id=='t1'){tab=1;render()}
+ else if(t.dataset.w){who=t.dataset.w;render()}
+ else if(t.dataset.m&&sel!=null){const[a,b]=t.dataset.m.split(',').map(Number);if(!a&&!b){plan[sel].d=base[sel].d;plan[sel].s=base[sel].s;plan[sel].l=base[sel].l;save();render()}else mv(cur()[sel],a,b)}
+ else if(t.dataset.r){if(t.dataset.r=='all')plan=base.map(x=>({...x}));else{const i=+t.dataset.r;plan[i].d=base[i].d;plan[i].s=base[i].s;plan[i].l=base[i].l}save();render()}
+ else if(t.id=='gym'){const a=plan.find(x=>x.n=='体操'&&x.c=='正'),b=plan.find(x=>x.n=='体操'&&x.c=='珠');b.d=a.d;b.s=a.s;tab=1;sel=b.id;save();render()}
+});
+const opt=(a,v)=>a.map(([k,t])=>`<option value="${k}"${k==v?' selected':''}>${t}</option>`).join('');
+const form=x=>`${tab?'':'<div class="mut">現状データを編集中</div>'}<div class="fm"><label>習い事<input data-f="n" value="${x.n}"></label><label>だれ<select data-f="c">${opt([['正','正義'],['珠','珠里'],['共','ふたり']],x.c)}</select></label><label>曜日<select data-f="d">${opt(D.map((t,i)=>[i,t]),x.d)}</select></label><label>開始<select data-f="s">${opt([...Array(R)].map((_,i)=>[i,fm(i)]),x.s)}</select></label><label>終了<select data-f="e">${opt([...Array(R)].map((_,i)=>[i+1,fm(i+1)]).filter(([k])=>k>x.s),x.s+x.l)}</select></label></div>`;
+document.addEventListener('change',e=>{const f=e.target.dataset.f;if(f==null||sel==null)return;const x=cur()[sel],v=e.target.value;
+ if(f=='n')upd(sel,{n:v.trim()||x.n});else if(f=='c')upd(sel,{c:v});else if(f=='d')upd(sel,{d:+v});
+ else if(f=='s')upd(sel,{s:+v});else upd(sel,{l:+v-x.s})});
+let dr=null;
+$('g').addEventListener('pointerdown',e=>{
+ const el=e.target.closest('.b');if(!el||el.classList.contains('ghost'))return;
+ const x=cur()[+el.dataset.id];dr={el,x,sx:e.clientX,sy:e.clientY,mv:false,cw:$('g').clientWidth-36};
+ el.setPointerCapture(e.pointerId);
+});
+$('g').addEventListener('pointermove',e=>{
+ if(!dr)return;const dx=e.clientX-dr.sx,dy=e.clientY-dr.sy;
+ if(!dr.mv&&Math.hypot(dx,dy)<6)return;dr.mv=true;dr.el.classList.add('drag');
+ dr.el.style.transform=`translate(${dx}px,${dy}px)`;
+});
+$('g').addEventListener('pointerup',e=>{
+ if(!dr)return;const{x,mv:m,sx,sy,cw}=dr;dr=null;
+ if(m){const dd=Math.round((e.clientX-sx)/(cw/7)),ds=Math.round((e.clientY-sy)/H);sel=x.id;mv(x,dd,ds)}
+ else{sel=sel==x.id?null:x.id;render()}
+});
+$('g').addEventListener('pointercancel',()=>{dr=null;render()});
+render();
+/* ---- Supabase sync ---- */
+const CID=Math.random().toString(36).slice(2);
+let sb=null,chn=null,pt=null;
+const cfg=()=>{try{return JSON.parse(localStorage.getItem('kids-sb-cfg')||'{}')}catch(e){return{}}};
+const status=t=>{$('sync').textContent=t};
+const c0=cfg();$('su').value=c0.url||'';$('sk').value=c0.key||'';$('sr').value=c0.room||'main';
+$('sc').onclick=()=>{try{localStorage.setItem('kids-sb-cfg',JSON.stringify({url:$('su').value.trim(),key:$('sk').value.trim(),room:$('sr').value.trim()||'main'}))}catch(e){}connect()};
+function sched(){if(!sb)return;clearTimeout(pt);pt=setTimeout(push,400)}
+async function push(){
+ try{const{error}=await sb.from('schedule').upsert({id:cfg().room||'main',data:{base,plan,cid:CID},updated_at:new Date().toISOString()});
+  if(error)throw error;status('☁ 同期済み')}catch(e){status('☁ 送信エラー');console.error(e)}
+}
+function applyRemote(d){
+ if(dr){setTimeout(()=>applyRemote(d),500);return}
+ if(!d.base||!d.plan||d.base.length!=base.length||d.plan.length!=plan.length)return;
+ d.base.forEach((v,i)=>Object.assign(base[i],v));d.plan.forEach((v,i)=>Object.assign(plan[i],v));
+ saveLocal();render();status('☁ 同期済み');
+}
+async function connect(){
+ const c=cfg();
+ if(!c.url||!c.key){status('☁ 未設定（この端末のみ保存）');return}
+ try{
+  if(chn&&sb)sb.removeChannel(chn);
+  sb=supabase.createClient(c.url,c.key);const room=c.room||'main';
+  const{data,error}=await sb.from('schedule').select('data').eq('id',room).maybeSingle();
+  if(error)throw error;
+  if(data&&data.data)applyRemote(data.data);else await push();
+  chn=sb.channel('sched-'+room).on('postgres_changes',{event:'*',schema:'public',table:'schedule',filter:'id=eq.'+room},p=>{const d=p.new&&p.new.data;if(d&&d.cid!==CID)applyRemote(d)}).subscribe(st=>{if(st==='SUBSCRIBED')status('☁ 同期中');else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')status('☁ 再接続待ち')});
+ }catch(e){status('☁ 接続エラー');console.error(e)}
+}
+connect();
+</script>
+</body>
+</html>
